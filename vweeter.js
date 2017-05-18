@@ -35,10 +35,6 @@ Vweeter = () => {
     trackChannels();
 
     trackBroadCasts();
-
-    firebase.database.ref('session').on('value', function(snapshot){
-
-    });
 }
 
 Vweeter.update = () => {
