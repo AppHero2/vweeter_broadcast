@@ -18,7 +18,7 @@ var timer = {};
 
 Vweeter = () => {
 
-    console.log(process.S3_KEY);
+    console.log('S3_KEY: ' ,process.S3_KEY);
 
     AWS.config.update({
         accessKeyId: process.env.S3_KEY,
