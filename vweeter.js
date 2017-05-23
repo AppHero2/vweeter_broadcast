@@ -16,6 +16,9 @@ var nextQueueItem = {};
 var tempQueueItem = {};
 var timer = {};
 
+/**
+ * initialize
+ */
 Vweeter = () => {
 
     AWS.config.update({
@@ -41,6 +44,9 @@ Vweeter.update = () => {
     console.log('-- update --');
 }
 
+/**
+ * get new added broadcasts in Firebase.
+ */
 trackBroadCasts = () => {
     broadcastRef.on('child_added', function(snapshot){
         if(snapshot.val() != null){
@@ -49,6 +55,9 @@ trackBroadCasts = () => {
     });
 }
 
+/**
+ * get new added channels in Firebase.
+ */
 trackChannels = () => {
     channelRef.on('child_added', function(snapshot) {
         var name = snapshot.key;
@@ -57,6 +66,12 @@ trackChannels = () => {
     });
 }
 
+/**
+ * param (channel:String) : current channel name.
+ * load old voices as many as limited number of cycle.
+ * get incoming voices which is fresh uploaded.
+ * get removed voices which is played among looping voices.
+ */
 trackVweeters = (channel) => {
     var vweeterRef = firebase.database().ref('Vweeter/' + channel);
     var initQuery = vweeterRef.limitToLast(numberOfCycle);
@@ -132,6 +147,7 @@ trackVweeters = (channel) => {
 
     });
 
+    // track removed voices
     queryRef.on('child_removed', function(snapshot){
         if(snapshot.val() != null){
 
@@ -174,6 +190,10 @@ trackVweeters = (channel) => {
 
 }
 
+/**
+ * params: channel name
+ * register broadcast and get event when its value updated.
+ */
 startBroadcastChannel = (channel) => {
 
     broadcastQuery = broadcastRef.child(channel);
@@ -187,6 +207,12 @@ startBroadcastChannel = (channel) => {
     });
 }
 
+/**
+ * param (channel:String): current channel name.
+ * param (currentID:String): current playing voice identify.
+ * param (currentDuration:Double): current playing voice length(seconds).
+ * update broadcast current playing voice's identify from old one.
+ */
 updatedBroadcast = (channel, currentID, currentDuration) => {
 
     console.log(channel + ' updatedBroadcast: ' + currentID);
@@ -195,6 +221,12 @@ updatedBroadcast = (channel, currentID, currentDuration) => {
     });
 }
 
+/**
+ * param (channel:String): current channel name.
+ * param (currentID:String): current playing voice identify.
+ * param (callback:(Object): get next voice in playing Queue.
+ * returns next voice in playing queue.
+ */
 determineNextQueueItem = (channel, currentID, callback) => {
     checkNewVweeter(channel, function(isExistNew, vweeter){
         var nextItem = null;
@@ -227,6 +259,10 @@ determineNextQueueItem = (channel, currentID, callback) => {
     });
 }
 
+/**
+ * return Boolean value for existing voice in playing Queue.
+ * return integer value for order of the existing voice. 
+ */
 checkExistVweeter = (channel, checkID, callback) => {
 
     var isExist = false;
@@ -247,6 +283,10 @@ checkExistVweeter = (channel, checkID, callback) => {
     callback(isExist, indexOf);
 }
 
+/**
+ * return Boolean value for existing new voice in playing Queue.
+ * return Object of vweeter for the existng new voice.
+ */
 checkNewVweeter = (channel, callback) => {
     var isExist = false;
     var vweeter = null;
@@ -262,6 +302,10 @@ checkNewVweeter = (channel, callback) => {
     return callback(isExist, vweeter);
 }
 
+/**
+ * param (channel:String): current channel name.
+ * stop playing voices.
+ */
 stopPlay = (channel) => {
     clearTimeout(timer[channel]);
 }
@@ -274,6 +318,12 @@ playNext = (channel, delay) => {
     }, delay);
 }
 
+/**
+ * param (channel:String): current channel name.
+ * param (vweeter:Object): voice to be played.
+ * update broadcast live voice identify.
+ * update voice's status from new to old.
+ */
 setBroadcastValue = (channel, vweeter) => {
     if (vweeter != null){
         var vweeterID = vweeter.key;
@@ -300,6 +350,12 @@ setBroadcastValue = (channel, vweeter) => {
     }
 }
 
+/**
+ * param (channel:String): current channel name.
+ * param (vweeter:Object): voice to be deleted.
+ * delete voice's info from Firebase
+ * delete voice's file from AWS S3. 
+ */
 deleteOldvweeter = (channel, vweeter) => {
     var vweeterRef = firebase.database().ref('Vweeter/' + channel);     
     var key = vweeter.key;
@@ -310,6 +366,10 @@ deleteOldvweeter = (channel, vweeter) => {
     console.log(channel + ': child_removed: ' + key);
 }
 
+/**
+ * param(key:String): file name to be deleted on S3.
+ * delete a file from AWS S3 with access key.
+ */
 deleteS3Object = (key) => {
     var s3 = new AWS.S3({
         params:{
