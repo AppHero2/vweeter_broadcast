@@ -3,7 +3,6 @@ var defaultDatabase, channelRef, broadcastRef;
 var channels = [];
 var vweeters = {};
 
-var isInitializedCleaners = {};
 var isBroadcastingStarted = {};
 var broadcasts = [];
 var numberOfCycle = 5;
@@ -153,11 +152,7 @@ trackVweeters = (channel) => {
                         if (element.isPlayed){
                             if (element.key != nextQueueItem[channel].key){
                                 vweeters[channel].splice(i, 1);
-                                console.log(channel + ': child_removed: ' + element.key);
-                                var key = element.key;
-                                var file = element.fileName;
-                                vweeterRef.child(key).remove();
-                                deleteS3Object(file);
+                                deleteOldvweeter(channel, element);
                             }
                         }
                     }
@@ -167,12 +162,7 @@ trackVweeters = (channel) => {
                         var element = vweeters[channel][i];
                         if (element.isPlayed){
                             vweeters[channel].splice(i, 1);
-                            console.log(channel + ': child_removed: ' + element.key); 
-                            
-                            var key = element.key;
-                            var file = element.fileName;
-                            vweeterRef.child(key).remove();
-                            deleteS3Object(file);  
+                            deleteOldvweeter(channel, element);
                             break;
                         }
                     }
@@ -182,7 +172,6 @@ trackVweeters = (channel) => {
         }
     });
 
-    //deleteOldvweeter(channel);
 }
 
 startBroadcastChannel = (channel) => {
@@ -311,24 +300,14 @@ setBroadcastValue = (channel, vweeter) => {
     }
 }
 
-deleteOldvweeter = (channel) => {
-    var vweeterRef = firebase.database().ref('Vweeter/' + channel);
-    var queryRef = vweeterRef.limitToLast(numberOfCycle+numberOfCache+1);
-    isInitializedCleaners[channel] = false;
+deleteOldvweeter = (channel, vweeter) => {
+    var vweeterRef = firebase.database().ref('Vweeter/' + channel);     
+    var key = vweeter.key;
+    var file = vweeter.fileName;
+    vweeterRef.child(key).remove();
+    deleteS3Object(file);
 
-    queryRef.on('child_removed', function(snapshot){
-        if (snapshot != null) {
-            if (isInitializedCleaners[channel]){
-                var fileName = snapshot.val().fileName;
-                deleteS3Object(fileName);
-                snapshot.ref.remove();
-            }
-        }
-    });
-
-    queryRef.once('value', function(snapshot){
-        isInitializedCleaners[channel] = true;
-    });
+    console.log(channel + ': child_removed: ' + key);
 }
 
 deleteS3Object = (key) => {
