@@ -73,14 +73,17 @@ trackVweeters = (channel) => {
             var fileName = obj.val().fileName;
             var filePath = obj.val().filePath;
             var isPlayed = obj.val().isPlayed;
-            var vweeter = {
+            if (isPlayed){
+                var vweeter = {
                     'key': key,
                     'fileName':fileName,
                     'filePath':filePath,
                     'duration':duration,
                     'isPlayed':isPlayed
                 };
-            vweeters[channel].push(vweeter);   
+                vweeters[channel].push(vweeter);
+            }
+               
         });
 
         startBroadcastChannel(channel);
@@ -143,8 +146,6 @@ trackVweeters = (channel) => {
                     }
                 });
 
-                console.log('numberOfold: ' + numberOfold + '\nnumberOfnew: ' + numberOfnew);
-
                 if (numberOfnew >= numberOfCycle){
                     // remove all old vweeters
                     for (var i = 0; i < vweeters[channel].length; i++){
@@ -153,6 +154,10 @@ trackVweeters = (channel) => {
                             if (element.key != nextQueueItem[channel].key){
                                 vweeters[channel].splice(i, 1);
                                 console.log(channel + ': child_removed: ' + element.key);
+                                var key = element.key;
+                                var file = element.fileName;
+                                vweeterRef.child(key).remove();
+                                deleteS3Object(file);
                             }
                         }
                     }
@@ -162,19 +167,22 @@ trackVweeters = (channel) => {
                         var element = vweeters[channel][i];
                         if (element.isPlayed){
                             vweeters[channel].splice(i, 1);
-                            console.log(channel + ': child_removed: ' + element.key);
+                            console.log(channel + ': child_removed: ' + element.key); 
                             
+                            var key = element.key;
+                            var file = element.fileName;
+                            vweeterRef.child(key).remove();
+                            deleteS3Object(file);  
                             break;
                         }
                     }
                 }
-                
             }
 
         }
     });
 
-    deleteOldvweeter(channel);
+    //deleteOldvweeter(channel);
 }
 
 startBroadcastChannel = (channel) => {
@@ -326,12 +334,12 @@ deleteOldvweeter = (channel) => {
 deleteS3Object = (key) => {
     var s3 = new AWS.S3({
         params:{
-            Bucket: aws_vweeterapp_bucket,
+            Bucket: vweeterapp_bucket,
         }
     });
 
     var params = {
-        Bucket: aws_vweeterapp_bucket,
+        Bucket: vweeterapp_bucket,
         Key: key
     };
 
