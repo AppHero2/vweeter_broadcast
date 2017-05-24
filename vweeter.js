@@ -138,6 +138,7 @@ trackVweeters = (channel) => {
 
                 if (count > 1){
                     //----> in case of new vweeters exist more than 1.
+                    console.log(channel + ": new vweeter count -> " + count);
                 }else{
                     tempQueueItem[channel] = nextQueueItem[channel];
                     nextQueueItem[channel] = vweeter;
@@ -191,7 +192,7 @@ trackVweeters = (channel) => {
 }
 
 /**
- * params: channel name
+ * param (channel:String): current channel name
  * register broadcast and get event when its value updated.
  */
 startBroadcastChannel = (channel) => {
@@ -225,7 +226,7 @@ updatedBroadcast = (channel, currentID, currentDuration) => {
  * param (channel:String): current channel name.
  * param (currentID:String): current playing voice identify.
  * param (callback:(Object): get next voice in playing Queue.
- * returns next voice in playing queue.
+ * @return next voice in playing queue.
  */
 determineNextQueueItem = (channel, currentID, callback) => {
     checkNewVweeter(channel, function(isExistNew, vweeter){
@@ -260,8 +261,11 @@ determineNextQueueItem = (channel, currentID, callback) => {
 }
 
 /**
- * return Boolean value for existing voice in playing Queue.
- * return integer value for order of the existing voice. 
+ * param (channel:String): current channel name.
+ * param (checkID:String): current playing queue item identify.
+ * @return callback(Boolean, Integer)
+ * Boolean value for existing voice in playing Queue.
+ * Integer value for order of the existing voice. 
  */
 checkExistVweeter = (channel, checkID, callback) => {
 
@@ -284,8 +288,9 @@ checkExistVweeter = (channel, checkID, callback) => {
 }
 
 /**
- * return Boolean value for existing new voice in playing Queue.
- * return Object of vweeter for the existng new voice.
+ * @return callback(Boolean, Object)
+ * Boolean value for existing new voice in playing Queue.
+ * Object value is vweeter for the existng new voice.
  */
 checkNewVweeter = (channel, callback) => {
     var isExist = false;
