@@ -5,7 +5,7 @@ var vweeters = {};
 
 var isBroadcastingStarted = {};
 var broadcasts = [];
-var numberOfCycle = 5;
+var numberOfCycle = 20;
 var numberOfCache = 3;
 
 var AWS                = require('aws-sdk');
@@ -67,7 +67,7 @@ trackChannels = () => {
 }
 
 /**
- * param (channel:String) : current channel name.
+ * @param (channel:String) : current channel name.
  * load old voices as many as limited number of cycle.
  * get incoming voices which is fresh uploaded.
  * get removed voices which is played among looping voices.
@@ -192,7 +192,7 @@ trackVweeters = (channel) => {
 }
 
 /**
- * param (channel:String): current channel name
+ * @param (channel:String): current channel name
  * register broadcast and get event when its value updated.
  */
 startBroadcastChannel = (channel) => {
@@ -209,9 +209,9 @@ startBroadcastChannel = (channel) => {
 }
 
 /**
- * param (channel:String): current channel name.
- * param (currentID:String): current playing voice identify.
- * param (currentDuration:Double): current playing voice length(seconds).
+ * @param (channel:String): current channel name.
+ * @param (currentID:String): current playing voice identify.
+ * @param (currentDuration:Double): current playing voice length(seconds).
  * update broadcast current playing voice's identify from old one.
  */
 updatedBroadcast = (channel, currentID, currentDuration) => {
@@ -223,9 +223,9 @@ updatedBroadcast = (channel, currentID, currentDuration) => {
 }
 
 /**
- * param (channel:String): current channel name.
- * param (currentID:String): current playing voice identify.
- * param (callback:(Object): get next voice in playing Queue.
+ * @param (channel:String): current channel name.
+ * @param (currentID:String): current playing voice identify.
+ * @param (callback:(Object): get next voice in playing Queue.
  * @return next voice in playing queue.
  */
 determineNextQueueItem = (channel, currentID, callback) => {
@@ -261,8 +261,8 @@ determineNextQueueItem = (channel, currentID, callback) => {
 }
 
 /**
- * param (channel:String): current channel name.
- * param (checkID:String): current playing queue item identify.
+ * @param (channel:String): current channel name.
+ * @param (checkID:String): current playing queue item identify.
  * @return callback(Boolean, Integer)
  * Boolean value for existing voice in playing Queue.
  * Integer value for order of the existing voice. 
@@ -288,6 +288,8 @@ checkExistVweeter = (channel, checkID, callback) => {
 }
 
 /**
+ * @param (channel:String): current channel name.
+ * @param (callback:function): receive following params.
  * @return callback(Boolean, Object)
  * Boolean value for existing new voice in playing Queue.
  * Object value is vweeter for the existng new voice.
@@ -308,7 +310,7 @@ checkNewVweeter = (channel, callback) => {
 }
 
 /**
- * param (channel:String): current channel name.
+ * @param (channel:String): current channel name.
  * stop playing voices.
  */
 stopPlay = (channel) => {
@@ -324,8 +326,8 @@ playNext = (channel, delay) => {
 }
 
 /**
- * param (channel:String): current channel name.
- * param (vweeter:Object): voice to be played.
+ * @param (channel:String): current channel name.
+ * @param (vweeter:Object): voice to be played.
  * update broadcast live voice identify.
  * update voice's status from new to old.
  */
@@ -356,8 +358,19 @@ setBroadcastValue = (channel, vweeter) => {
 }
 
 /**
- * param (channel:String): current channel name.
- * param (vweeter:Object): voice to be deleted.
+ * @param (name:String): channel name to be created.
+ * @param (profile:String): channel profile image link.
+ * create new channel.
+ */
+createNewChannel = (name, link) => {
+    channelRef.child(name).set({
+        'url_flag':link
+    });
+}
+
+/**
+ * @param (channel:String): current channel name.
+ * @param (vweeter:Object): voice to be deleted.
  * delete voice's info from Firebase
  * delete voice's file from AWS S3. 
  */
@@ -372,7 +385,7 @@ deleteOldvweeter = (channel, vweeter) => {
 }
 
 /**
- * param(key:String): file name to be deleted on S3.
+ * @param(key:String): file name to be deleted on S3.
  * delete a file from AWS S3 with access key.
  */
 deleteS3Object = (key) => {
@@ -393,6 +406,74 @@ deleteS3Object = (key) => {
         }else{
             console.log('delete file : ' + key + 'done.');
         }
+    });
+}
+
+/**
+ * @param (key: String): file name to be saved on S3.
+ * @param (file: String): putting file
+ * put a file to S3.
+ */
+putS3Object = (key, file) => {
+    var bucket = new AWS.S3({
+        params:{
+            Bucket: vweeterapp_bucket
+        }
+    });
+
+    var params = {
+        Key: key,
+        ContentType: file.type,
+        Body:file,
+        ACL: 'public-read'
+    };
+
+    bucket.putObject(params, function(error, data){
+        if (error) {
+            console.log("Error:" + error);
+        } else {
+            console.log("File has been put on S3.")
+        }
+    });
+}
+
+/**
+ * @param (key:String): file name to be saved on S3.
+ * @param (file:String): uploading file path.
+ * upload file to S3.
+ */
+uploadFileToS3 = (key, file) => {
+    var s3 = require('s3');
+    var awsS3Client = new AWS.S3({
+        params:{
+            Bucket: vweeterapp_bucket,
+        }
+    });
+
+    var options = {
+        s3Client: awsS3Client,
+    };
+
+    var client = s3.createClient(options);
+
+    var params = {
+        localFile: "some/local/file",
+
+        s3Params: {
+            Bucket: vweeterapp_bucket,
+            Key: key,
+        },
+    };
+
+    var uploader = client.uploadFile(params);
+    uploader.on('error', function(error){
+        console.error("unable to upload:", error.stack);
+    });
+    uploader.on('progress', function(){
+        console.log("progress", uploader.progressMd5Amount, uploader.progressAmount, uploader.progressTotal);
+    });
+    uploader.on('end', function(){
+        console.log("done uploading");
     });
 }
 
