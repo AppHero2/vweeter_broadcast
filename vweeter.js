@@ -1,7 +1,7 @@
 var firebase      = require('firebase');
 var defaultDatabase, channelRef, broadcastRef;
 var channels = [];
-var vweeters = {};
+var voices = {};
 
 var isBroadcastingStarted = {};
 var broadcasts = [];
@@ -11,7 +11,7 @@ var numberOfCache = 3;
 var AWS                = require('aws-sdk');
 var vweeterapp_bucket  = 'vweeterappnortheast2/voices';
 
-var vweetersQueue = {};
+var voicesQueue = {};
 var nextQueueItem = {};
 var tempQueueItem = {};
 var timer = {};
@@ -32,7 +32,7 @@ Vweeter = () => {
     };
 
     defaultDatabase = firebase.database();
-    channelRef = firebase.database().ref('Channel');
+    channelRef = firebase.database().ref('Channels');
     broadcastRef = firebase.database().ref('Broadcast');
 
     trackChannels();
@@ -62,7 +62,12 @@ trackChannels = () => {
     channelRef.on('child_added', function(snapshot) {
         var name = snapshot.key;
         channels.push(name);
-        trackVweeters(name);
+        trackVoices(name);
+    });
+
+    channelRef.on('child_removed', function(snapshot) {
+        var name = snapshot.key;
+        //TODO:
     });
 }
 
@@ -72,11 +77,11 @@ trackChannels = () => {
  * get incoming voices which is fresh uploaded.
  * get removed voices which is played among looping voices.
  */
-trackVweeters = (channel) => {
-    var vweeterRef = firebase.database().ref('Vweeter/' + channel);
-    var initQuery = vweeterRef.limitToLast(numberOfCycle);
+trackVoices = (channel) => {
+    var voiceRef = firebase.database().ref('Voices/' + channel);
+    var initQuery = voiceRef.limitToLast(numberOfCycle);
 
-    vweeters[channel] = [];    
+    voices[channel] = [];    
     isBroadcastingStarted[channel] = false;
 
     initQuery.once('value', function(snapshot){
@@ -88,14 +93,14 @@ trackVweeters = (channel) => {
             var filePath = obj.val().filePath;
             var isPlayed = obj.val().isPlayed;
             if (isPlayed){
-                var vweeter = {
+                var voice = {
                     'key': key,
                     'fileName':fileName,
                     'filePath':filePath,
                     'duration':duration,
                     'isPlayed':isPlayed
                 };
-                vweeters[channel].push(vweeter);
+                voices[channel].push(voice);
             }
                
         });
@@ -104,44 +109,44 @@ trackVweeters = (channel) => {
     });
 
     // track incoming voices
-    var queryRef = vweeterRef.orderByChild('isPlayed').equalTo(false);
+    var queryRef = voiceRef.orderByChild('isPlayed').equalTo(false);
     queryRef.on('child_added', function(snapshot){
         var key = snapshot.key;
         var duration = snapshot.val().duration;
         var fileName = snapshot.val().fileName;
         var filePath = snapshot.val().filePath;
         var isPlayed = snapshot.val().isPlayed;
-        var vweeter = {
+        var voice = {
                 'key': key,
                 'fileName':fileName,
                 'filePath':filePath,
                 'duration':duration,
                 'isPlayed':isPlayed
             };
-        vweeters[channel].push(vweeter);
+        voices[channel].push(voice);
         console.log(channel + ' : child_added: ' + key);
 
-        if (vweeters[channel].length < 2){
+        if (voices[channel].length < 2){
             console.log('setBraodcast: ' + channel + ', ' + null + ' due to less than 2.');
             setBroadcastValue(channel, null);
         }else{
             if (!isBroadcastingStarted[channel]) {
-                setBroadcastValue(channel, vweeter);
+                setBroadcastValue(channel, voice);
             }else{
 
                 var count = 0;
-                vweeters[channel].forEach(function(element) {
+                voices[channel].forEach(function(element) {
                     if (element.isPlayed == false){
                         count += 1;
                     }
                 });
 
                 if (count > 1){
-                    //----> in case of new vweeters exist more than 1.
-                    console.log(channel + ": new vweeter count -> " + count);
+                    //----> in case of new voices exist more than 1.
+                    console.log(channel + ": new voice count -> " + count);
                 }else{
                     tempQueueItem[channel] = nextQueueItem[channel];
-                    nextQueueItem[channel] = vweeter;
+                    nextQueueItem[channel] = voice;
                 }
             }
         }
@@ -152,9 +157,9 @@ trackVweeters = (channel) => {
     queryRef.on('child_removed', function(snapshot){
         if(snapshot.val() != null){
 
-            if (vweeters[channel].length > numberOfCycle){
+            if (voices[channel].length > numberOfCycle){
                 var numberOfnew = 0, numberOfold = 0; 
-                vweeters[channel].forEach(function(element){
+                voices[channel].forEach(function(element){
                     if (element.isPlayed){
                         numberOfold += 1;
                     }else{
@@ -163,23 +168,23 @@ trackVweeters = (channel) => {
                 });
 
                 if (numberOfnew >= numberOfCycle){
-                    // remove all old vweeters
-                    for (var i = 0; i < vweeters[channel].length; i++){
-                        var element = vweeters[channel][i];
+                    // remove all old voices
+                    for (var i = 0; i < voices[channel].length; i++){
+                        var element = voices[channel][i];
                         if (element.isPlayed){
                             if (element.key != nextQueueItem[channel].key){
-                                vweeters[channel].splice(i, 1);
-                                deleteOldvweeter(channel, element);
+                                voices[channel].splice(i, 1);
+                                deleteOldvoice(channel, element);
                             }
                         }
                     }
             
                 }else{
-                    for (var i = 0; i < vweeters[channel].length; i++){
-                        var element = vweeters[channel][i];
+                    for (var i = 0; i < voices[channel].length; i++){
+                        var element = voices[channel][i];
                         if (element.isPlayed){
-                            vweeters[channel].splice(i, 1);
-                            deleteOldvweeter(channel, element);
+                            voices[channel].splice(i, 1);
+                            deleteOldvoice(channel, element);
                             break;
                         }
                     }
@@ -229,26 +234,26 @@ updatedBroadcast = (channel, currentID, currentDuration) => {
  * @return next voice in playing queue.
  */
 determineNextQueueItem = (channel, currentID, callback) => {
-    checkNewVweeter(channel, function(isExistNew, vweeter){
+    checkNewvoice(channel, function(isExistNew, voice){
         var nextItem = null;
         if(isExistNew){
-            checkExistVweeter(channel, currentID, function(isExist, indexOf){
+            checkExistvoice(channel, currentID, function(isExist, indexOf){
                 if (isExist){
-                    nextItem = vweeter;
+                    nextItem = voice;
                     nextQueueItem[channel] = nextItem; 
                 }
             });
         }else{
-            checkExistVweeter(channel, currentID, function(isExist, indexOf){
+            checkExistvoice(channel, currentID, function(isExist, indexOf){
                 if (isExist){
-                    var liveVweeter = vweeters[channel][indexOf];
+                    var livevoice = voices[channel][indexOf];
                     if (tempQueueItem[channel]) {
                         nextItem = tempQueueItem[channel];
                         tempQueueItem[channel] = null;
                     } else {
                         var j = indexOf + 1;
-                        if (j >= vweeters[channel].length) j=0;
-                        nextItem = vweeters[channel][j];
+                        if (j >= voices[channel].length) j=0;
+                        nextItem = voices[channel][j];
                     }
 
                     nextQueueItem[channel] = nextItem;
@@ -267,17 +272,17 @@ determineNextQueueItem = (channel, currentID, callback) => {
  * Boolean value for existing voice in playing Queue.
  * Integer value for order of the existing voice. 
  */
-checkExistVweeter = (channel, checkID, callback) => {
+checkExistvoice = (channel, checkID, callback) => {
 
     var isExist = false;
     var indexOf = 0;
     var j = 0;
-    for (var i = 0; i < vweeters[channel].length; i++){
-        var vweeter = vweeters[channel][i];
-        var key = vweeter.key;
+    for (var i = 0; i < voices[channel].length; i++){
+        var voice = voices[channel][i];
+        var key = voice.key;
         if (key == checkID){
             j = i + 1;
-            if (j >= vweeters[channel].length) j = 0;
+            if (j >= voices[channel].length) j = 0;
             indexOf = i;
             isExist = true;
             break;
@@ -292,21 +297,21 @@ checkExistVweeter = (channel, checkID, callback) => {
  * @param (callback:function): receive following params.
  * @return callback(Boolean, Object)
  * Boolean value for existing new voice in playing Queue.
- * Object value is vweeter for the existng new voice.
+ * Object value is voice for the existng new voice.
  */
-checkNewVweeter = (channel, callback) => {
+checkNewvoice = (channel, callback) => {
     var isExist = false;
-    var vweeter = null;
-    for (var idx = 0; idx < vweeters[channel].length; idx++){
-        vweeter = vweeters[channel][idx];
-        var isPlayed = vweeter.isPlayed;
+    var voice = null;
+    for (var idx = 0; idx < voices[channel].length; idx++){
+        voice = voices[channel][idx];
+        var isPlayed = voice.isPlayed;
         if (isPlayed == false) {
             isExist = true;
             break;
         }
     }
 
-    return callback(isExist, vweeter);
+    return callback(isExist, voice);
 }
 
 /**
@@ -327,31 +332,31 @@ playNext = (channel, delay) => {
 
 /**
  * @param (channel:String): current channel name.
- * @param (vweeter:Object): voice to be played.
+ * @param (voice:Object): voice to be played.
  * update broadcast live voice identify.
  * update voice's status from new to old.
  */
-setBroadcastValue = (channel, vweeter) => {
-    if (vweeter != null){
-        var vweeterID = vweeter.key;
-        var duration = vweeter.duration;
-        var isPlayed = vweeter.isPlayed;
+setBroadcastValue = (channel, voice) => {
+    if (voice != null){
+        var voiceID = voice.key;
+        var duration = voice.duration;
+        var isPlayed = voice.isPlayed;
         broadcastRef.child(channel).set({
             'live' : {
-                'idx':vweeterID,
+                'idx':voiceID,
                 'isNew':!isPlayed,
                 'duration': duration
             },
         });
 
-        if (vweeter.isPlayed == false){
-            vweeter.isPlayed = true;
-            var vweeterRef = firebase.database().ref('Vweeter/' + channel);
-            vweeterRef.child(vweeter.key).set({
-                'fileName': vweeter.fileName,
-                'filePath': vweeter.filePath,
-                'duration': vweeter.duration,
-                'isPlayed': vweeter.isPlayed
+        if (voice.isPlayed == false){
+            voice.isPlayed = true;
+            var voiceRef = firebase.database().ref('Voices/' + channel);
+            voiceRef.child(voice.key).set({
+                'fileName': voice.fileName,
+                'filePath': voice.filePath,
+                'duration': voice.duration,
+                'isPlayed': voice.isPlayed
             });
         }
     }
@@ -370,15 +375,15 @@ createNewChannel = (name, link) => {
 
 /**
  * @param (channel:String): current channel name.
- * @param (vweeter:Object): voice to be deleted.
+ * @param (voice:Object): voice to be deleted.
  * delete voice's info from Firebase
  * delete voice's file from AWS S3. 
  */
-deleteOldvweeter = (channel, vweeter) => {
-    var vweeterRef = firebase.database().ref('Vweeter/' + channel);     
-    var key = vweeter.key;
-    var file = vweeter.fileName;
-    vweeterRef.child(key).remove();
+deleteOldvoice = (channel, voice) => {
+    var voiceRef = firebase.database().ref('Voices/' + channel);     
+    var key = voice.key;
+    var file = voice.fileName;
+    voiceRef.child(key).remove();
     deleteS3Object(file);
 
     console.log(channel + ': child_removed: ' + key);
