@@ -21,11 +21,6 @@ firebase.initializeApp(config);
 
 vweeter(); // call vweeter
 
-var http = require('https');
-setInterval(function(){
-  http.get('https://vweeter.herokuapp.com/');
-},300000);
-
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
