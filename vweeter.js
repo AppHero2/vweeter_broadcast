@@ -28,7 +28,7 @@ Vweeter = () => {
 
     var http = require('https');
     setInterval(function(){
-        this.isDevMode == true ? http.get('https://vweeterdev.herokuapp.com/') : http.get('https://vweeter.herokuapp.com/');
+        isDevMode == true ? http.get('https://vweeterdev.herokuapp.com/') : http.get('https://vweeter.herokuapp.com/');
     },300000);
 
     AWS.config.update({
@@ -42,8 +42,8 @@ Vweeter = () => {
     };
 
     defaultDatabase = firebase.database();
-    channelRef = this.isDevMode == true ? firbase.database().ref("dev_Channels") : firebase.database().ref('Channels');
-    broadcastRef = this.isDevMode == true ? firebase.database().ref("dev_Broadcast") : firebase.database().ref('Broadcast');
+    channelRef = isDevMode == true ? firbase.database().ref("dev_Channels") : firebase.database().ref('Channels');
+    broadcastRef = isDevMode == true ? firebase.database().ref("dev_Broadcast") : firebase.database().ref('Broadcast');
 
     trackChannels();
 
@@ -88,7 +88,7 @@ trackChannels = () => {
  * get removed voices which is played among looping voices.
  */
 trackVoices = (channel) => {
-    var voiceRef = this.isDevMode == true ? firebase.database().ref('dev_Voices/' + channel) : firebase.database().ref('Voices/' + channel);
+    var voiceRef = isDevMode == true ? firebase.database().ref('dev_Voices/' + channel) : firebase.database().ref('Voices/' + channel);
     var initQuery = voiceRef.limitToLast(numberOfCycle);
 
     voices[channel] = [];    
@@ -361,7 +361,7 @@ setBroadcastValue = (channel, voice) => {
 
         if (voice.isPlayed == false){
             voice.isPlayed = true;
-            var voiceRef = this.isDevMode == true ? firebase.database().ref('dev_Voices/' + channel) : firebase.database().ref('Voices/' + channel);
+            var voiceRef = isDevMode == true ? firebase.database().ref('dev_Voices/' + channel) : firebase.database().ref('Voices/' + channel);
             voiceRef.child(voice.key).set({
                 'fileName': voice.fileName,
                 'filePath': voice.filePath,
@@ -390,7 +390,7 @@ createNewChannel = (name, link) => {
  * delete voice's file from AWS S3. 
  */
 deleteOldvoice = (channel, voice) => {
-    var voiceRef = this.isDevMode == true ? firebase.database().ref('dev_Voices/' + channel) : firebase.database().ref('Voices/' + channel);     
+    var voiceRef = isDevMode == true ? firebase.database().ref('dev_Voices/' + channel) : firebase.database().ref('Voices/' + channel);     
     var key = voice.key;
     var file = voice.fileName;
     voiceRef.child(key).remove();
