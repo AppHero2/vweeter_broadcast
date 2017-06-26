@@ -19,7 +19,7 @@ var timer = {};
 /**
  * development mode on/off
  */
-const isDevMode = false;
+const isDevMode = true;
 
 /**
  * initialize
