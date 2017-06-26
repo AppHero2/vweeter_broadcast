@@ -42,7 +42,7 @@ Vweeter = () => {
     };
 
     defaultDatabase = firebase.database();
-    channelRef = isDevMode == true ? firbase.database().ref("dev_Channels") : firebase.database().ref('Channels');
+    channelRef = isDevMode == true ? firebase.database().ref("dev_Channels") : firebase.database().ref('Channels');
     broadcastRef = isDevMode == true ? firebase.database().ref("dev_Broadcast") : firebase.database().ref('Broadcast');
 
     trackChannels();
