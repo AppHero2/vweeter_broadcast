@@ -19,7 +19,7 @@ var timer = {};
 /**
  * development mode on/off
  */
-const isDevMode = false;
+const isDevMode = true;
 
 /**
  * initialize
@@ -48,6 +48,7 @@ Vweeter = () => {
     trackChannels();
 
     trackBroadCasts();
+    
 }
 
 Vweeter.update = () => {
@@ -141,7 +142,8 @@ trackVoices = (channel) => {
             setBroadcastValue(channel, null);
         }else{
             if (!isBroadcastingStarted[channel]) {
-                setBroadcastValue(channel, voice);
+                var first_voice = voices[channel][0];
+                setBroadcastValue(channel, first_voice);
             }else{
 
                 var count = 0;
@@ -246,14 +248,14 @@ updatedBroadcast = (channel, currentID, currentDuration) => {
 determineNextQueueItem = (channel, currentID, callback) => {
     checkNewvoice(channel, function(isExistNew, voice){
         var nextItem = null;
-        if(isExistNew){
-            checkExistvoice(channel, currentID, function(isExist, indexOf){
-                if (isExist){
-                    nextItem = voice;
-                    nextQueueItem[channel] = nextItem; 
-                }
-            });
-        }else{
+        // if(isExistNew){
+        //     checkExistvoice(channel, currentID, function(isExist, indexOf){
+        //         if (isExist){
+        //             nextItem = voice;
+        //             nextQueueItem[channel] = nextItem; 
+        //         }
+        //     });
+        // }else{
             checkExistvoice(channel, currentID, function(isExist, indexOf){
                 if (isExist){
                     var livevoice = voices[channel][indexOf];
@@ -269,7 +271,7 @@ determineNextQueueItem = (channel, currentID, callback) => {
                     nextQueueItem[channel] = nextItem;
                 }
             });
-        }
+        // }
 
         callback(nextItem);
     });
@@ -362,13 +364,18 @@ setBroadcastValue = (channel, voice) => {
         if (voice.isPlayed == false){
             voice.isPlayed = true;
             var voiceRef = isDevMode == true ? firebase.database().ref('dev_Voices/' + channel) : firebase.database().ref('Voices/' + channel);
-            voiceRef.child(voice.key).set({
-                'fileName': voice.fileName,
-                'filePath': voice.filePath,
-                'duration': voice.duration,
+            voiceRef.child(voice.key).update({
                 'isPlayed': voice.isPlayed
             });
         }
+    } else {
+        broadcastRef.child(channel).set({
+            'live' : {
+                'idx':999,
+                'isNew':false,
+                'duration': 1.0
+            },
+        });
     }
 }
 
