@@ -146,15 +146,10 @@ trackVoices = (channel) => {
                 setBroadcastValue(channel, first_voice);
             }else{
 
-                var count = 0;
-                voices[channel].forEach(function(element) {
-                    if (element.isPlayed == false){
-                        count += 1;
-                    }
-                });
+                var count = numberOfnewVoices();
 
-                if (count > 1){
-                    //----> in case of new voices exist more than 1.
+                if (count > 1) //----> in case of new voices exist more than 1.
+                {
                     console.log(channel + ": new voice count -> " + count);
                 }else{
                     tempQueueItem[channel] = nextQueueItem[channel];
@@ -246,35 +241,61 @@ updatedBroadcast = (channel, currentID, currentDuration) => {
  * @return next voice in playing queue.
  */
 determineNextQueueItem = (channel, currentID, callback) => {
-    checkNewvoice(channel, function(isExistNew, voice){
-        var nextItem = null;
-        // if(isExistNew){
-        //     checkExistvoice(channel, currentID, function(isExist, indexOf){
-        //         if (isExist){
-        //             nextItem = voice;
-        //             nextQueueItem[channel] = nextItem; 
-        //         }
-        //     });
-        // }else{
-            checkExistvoice(channel, currentID, function(isExist, indexOf){
-                if (isExist){
-                    var livevoice = voices[channel][indexOf];
-                    if (tempQueueItem[channel]) {
-                        nextItem = tempQueueItem[channel];
-                        tempQueueItem[channel] = null;
-                    } else {
-                        var j = indexOf + 1;
-                        if (j >= voices[channel].length) j=0;
-                        nextItem = voices[channel][j];
+
+    var newVoicesCount = numberOfnewVoices();
+    if (newVoicesCount > 1)
+    {
+        checkNewvoice(channel, function(isExistNew, voice){
+            var nextItem = null;
+            if(isExistNew){
+                checkExistvoice(channel, currentID, function(isExist, indexOf){
+                    if (isExist){
+                        nextItem = voice;
+                        nextQueueItem[channel] = nextItem; 
                     }
+                });
+            }else{
+                checkExistvoice(channel, currentID, function(isExist, indexOf){
+                    if (isExist){
+                        var livevoice = voices[channel][indexOf];
+                        if (tempQueueItem[channel]) {
+                            nextItem = tempQueueItem[channel];
+                            tempQueueItem[channel] = null;
+                        } else {
+                            var j = indexOf + 1;
+                            if (j >= voices[channel].length) j=0;
+                            nextItem = voices[channel][j];
+                        }
 
-                    nextQueueItem[channel] = nextItem;
+                        nextQueueItem[channel] = nextItem;
+                    }
+                });
+            }
+
+            callback(nextItem);
+        });
+    } 
+    else 
+    {
+        var nextItem = null;
+        checkExistvoice(channel, currentID, function(isExist, indexOf){
+            if (isExist){
+                var livevoice = voices[channel][indexOf];
+                if (tempQueueItem[channel]) {
+                    nextItem = tempQueueItem[channel];
+                    tempQueueItem[channel] = null;
+                } else {
+                    var j = indexOf + 1;
+                    if (j >= voices[channel].length) j=0;
+                    nextItem = voices[channel][j];
                 }
-            });
-        // }
 
-        callback(nextItem);
-    });
+                nextQueueItem[channel] = nextItem;
+            }
+        });
+
+         callback(nextItem);
+    }
 }
 
 /**
@@ -324,6 +345,24 @@ checkNewvoice = (channel, callback) => {
     }
 
     return callback(isExist, voice);
+}
+
+/**
+ * @return count new incoming voices in a channel
+ */
+numberOfnewVoices = (channel) => {
+    var count = 0;
+    var arrVoice = voices[channel];
+    if(arrVoice != null){
+        if(arrVoice.length > 0){
+            voices[channel].forEach(function(element) {
+                if (element.isPlayed == false){
+                    count += 1;
+                }
+            });
+        }
+    }
+    return count;
 }
 
 /**
