@@ -42,17 +42,25 @@ Vweeter = () => {
     };
 
     defaultDatabase = firebase.database();
-    channelRef = isDevMode == true ? firebase.database().ref("dev_Channels") : firebase.database().ref('Channels');
-    broadcastRef = isDevMode == true ? firebase.database().ref("dev_Broadcast") : firebase.database().ref('Broadcast');
+    channelRef = isDevMode == true ? firebase.database().ref('dev_Channels') : firebase.database().ref('Channels');
+    broadcastRef = isDevMode == true ? firebase.database().ref('dev_Broadcast') : firebase.database().ref('Broadcast');
 
     trackChannels();
 
     trackBroadCasts();
     
+    trackDisconnectedUsers();
 }
 
-Vweeter.update = () => {
-    console.log('-- update --');
+/**
+ * implementation for users closed app playing in background.
+ */
+trackDisconnectedUsers = () => {
+    firebase.database.ref('disconnectedUsers').on('child_added', function(snapshot){
+        if(snapshot.val() != null){
+            console.log('disconnectedUser: ' + snapshot.key);
+        }
+    });
 }
 
 /**
