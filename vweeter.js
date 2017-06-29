@@ -49,7 +49,7 @@ Vweeter = () => {
 
     trackBroadCasts();
     
-    //trackDisconnectedUsers();
+    trackDisconnectedUsers();
 }
 
 /**
@@ -111,7 +111,7 @@ trackVoices = (channel) => {
             var fileName = obj.val().fileName;
             var filePath = obj.val().filePath;
             var isPlayed = obj.val().isPlayed;
-            if (isPlayed){
+            // if (isPlayed){
                 var voice = {
                     'key': key,
                     'fileName':fileName,
@@ -120,7 +120,7 @@ trackVoices = (channel) => {
                     'isPlayed':isPlayed
                 };
                 voices[channel].push(voice);
-            }
+            // }
                
         });
 
