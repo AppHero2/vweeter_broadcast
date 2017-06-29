@@ -49,7 +49,7 @@ Vweeter = () => {
 
     trackBroadCasts();
     
-    trackDisconnectedUsers();
+    //trackDisconnectedUsers();
 }
 
 /**
@@ -153,9 +153,7 @@ trackVoices = (channel) => {
                 var first_voice = voices[channel][0];
                 setBroadcastValue(channel, first_voice);
             }else{
-
                 var count = numberOfnewVoices();
-
                 if (count > 1) //----> in case of new voices exist more than 1.
                 {
                     console.log(channel + ": new voice count -> " + count);
