@@ -63,6 +63,7 @@ trackDisconnectedUsers = () => {
 
             // remove user from channelRef
             channelRef.child(channelId).child('listeners').child(userId).remove();
+            firebase.database().ref('disconnectedUsers').child(userId).remove();
         }
     });
 }
