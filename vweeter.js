@@ -56,7 +56,7 @@ Vweeter = () => {
  * implementation for users closed app playing in background.
  */
 trackDisconnectedUsers = () => {
-    firebase.database.ref('disconnectedUsers').on('child_added', function(snapshot){
+    firebase.database().ref('disconnectedUsers').on('child_added', function(snapshot){
         if(snapshot.val() != null){
             console.log('disconnectedUser: ' + snapshot.key);
         }
