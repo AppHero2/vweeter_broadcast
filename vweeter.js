@@ -58,7 +58,11 @@ Vweeter = () => {
 trackDisconnectedUsers = () => {
     firebase.database().ref('disconnectedUsers').on('child_added', function(snapshot){
         if(snapshot.val() != null){
-            console.log('disconnectedUser: ' + snapshot.key);
+            var userId = snapshot.key;
+            var channelId = snapshot.val();
+
+            // remove user from channelRef
+            channelRef.child(channelId).child('listeners').child(userId).remove();
         }
     });
 }
