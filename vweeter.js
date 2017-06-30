@@ -49,7 +49,7 @@ Vweeter = () => {
 
     trackBroadCasts();
     
-    trackDisconnectedUsers();
+    // trackDisconnectedUsers();
 }
 
 /**
