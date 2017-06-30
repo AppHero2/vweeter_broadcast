@@ -108,6 +108,7 @@ trackVoices = (channel) => {
     voices[channel] = [];    
     isBroadcastingStarted[channel] = false;
 
+    // when server is restarting...
     initQuery.once('value', function(snapshot){
 
         snapshot.forEach(function(obj){
@@ -132,7 +133,7 @@ trackVoices = (channel) => {
     });
 
     // track incoming voices
-    var queryRef = voiceRef.orderByChild('isPlayed').equalTo(false);
+    var queryRef = voiceRef;//.orderByChild('isPlayed').equalTo(false);
     queryRef.on('child_added', function(snapshot){
         var key = snapshot.key;
         var duration = snapshot.val().duration;
