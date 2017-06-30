@@ -126,12 +126,36 @@ trackVoices = (channel) => {
                         'isPlayed':isPlayed
                     };
                     voices[channel].push(voice);
-                }   
+                    console.log('initQuery: ' + voice.key);
+                }
             });
 
             startBroadcastChannel(channel);
         }
+        
     });
+
+    // // very first voice after created channel
+    // voiceRef.on('child_added', function(snapshot){
+    //     if (snapshot.val() != null){
+    //         if (voices[channel].length == 0){
+    //             var key = snapshot.key;
+    //             var duration = snapshot.val().duration;
+    //             var fileName = snapshot.val().fileName;
+    //             var filePath = snapshot.val().filePath;
+    //             var isPlayed = snapshot.val().isPlayed;
+    //             var voice = {
+    //                     'key': key,
+    //                     'fileName':fileName,
+    //                     'filePath':filePath,
+    //                     'duration':duration,
+    //                     'isPlayed':isPlayed
+    //                 };
+    //             voices[channel].push(voice);
+    //             voiceRef.off();
+    //         }
+    //     }
+    // });
 
     // track incoming new voices
     var queryRef = voiceRef.orderByChild('isPlayed').equalTo(false);
