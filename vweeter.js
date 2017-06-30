@@ -110,14 +110,38 @@ trackVoices = (channel) => {
 
     // when server is restarting...
     initQuery.once('value', function(snapshot){
+        if (snapshot.val() != null){
+            snapshot.forEach(function(obj){
+                var key = obj.key;
+                var duration = obj.val().duration;
+                var fileName = obj.val().fileName;
+                var filePath = obj.val().filePath;
+                var isPlayed = obj.val().isPlayed;
+                if (isPlayed){
+                    var voice = {
+                        'key': key,
+                        'fileName':fileName,
+                        'filePath':filePath,
+                        'duration':duration,
+                        'isPlayed':isPlayed
+                    };
+                    voices[channel].push(voice);
+                }   
+            });
 
-        snapshot.forEach(function(obj){
-            var key = obj.key;
-            var duration = obj.val().duration;
-            var fileName = obj.val().fileName;
-            var filePath = obj.val().filePath;
-            var isPlayed = obj.val().isPlayed;
-            
+            startBroadcastChannel(channel);
+        }
+    });
+
+    // track incoming new voices
+    var queryRef = voiceRef.orderByChild('isPlayed').equalTo(false);
+    queryRef.on('child_added', function(snapshot){
+        if (snapshot.val() != null) {
+            var key = snapshot.key;
+            var duration = snapshot.val().duration;
+            var fileName = snapshot.val().fileName;
+            var filePath = snapshot.val().filePath;
+            var isPlayed = snapshot.val().isPlayed;
             var voice = {
                     'key': key,
                     'fileName':fileName,
@@ -126,55 +150,32 @@ trackVoices = (channel) => {
                     'isPlayed':isPlayed
                 };
             voices[channel].push(voice);
-               
-        });
+            console.log(channel + ' : child_added: ' + key);
 
-        startBroadcastChannel(channel);
-    });
-
-    // track incoming voices
-    var queryRef = voiceRef;//.orderByChild('isPlayed').equalTo(false);
-    queryRef.on('child_added', function(snapshot){
-        var key = snapshot.key;
-        var duration = snapshot.val().duration;
-        var fileName = snapshot.val().fileName;
-        var filePath = snapshot.val().filePath;
-        var isPlayed = snapshot.val().isPlayed;
-        var voice = {
-                'key': key,
-                'fileName':fileName,
-                'filePath':filePath,
-                'duration':duration,
-                'isPlayed':isPlayed
-            };
-        voices[channel].push(voice);
-        console.log(channel + ' : child_added: ' + key);
-
-        if (voices[channel].length < 2){
-            console.log('setBraodcast: ' + channel + ', ' + null + ' due to less than 2.');
-            setBroadcastValue(channel, null);
-        }else{
-            if (!isBroadcastingStarted[channel]) {
-                var first_voice = voices[channel][0];
-                setBroadcastValue(channel, first_voice);
+            if (voices[channel].length < 2){
+                console.log('setBraodcast: ' + channel + ', ' + null + ' due to less than 2.');
+                setBroadcastValue(channel, null);
             }else{
-                var count = numberOfnewVoices();
-                if (count > 1) //----> in case of new voices exist more than 1.
-                {
-                    console.log(channel + ": new voice count -> " + count);
+                if (!isBroadcastingStarted[channel]) {
+                    var first_voice = voices[channel][0];
+                    setBroadcastValue(channel, first_voice);
                 }else{
-                    tempQueueItem[channel] = nextQueueItem[channel];
-                    nextQueueItem[channel] = voice;
+                    var count = numberOfnewVoices();
+                    if (count > 1) //----> in case of new voices exist more than 1.
+                    {
+                        console.log(channel + ": new voice count -> " + count);
+                    }else{
+                        tempQueueItem[channel] = nextQueueItem[channel];
+                        nextQueueItem[channel] = voice;
+                    }
                 }
             }
         }
-
     });
 
     // track removed voices
     queryRef.on('child_removed', function(snapshot){
         if(snapshot.val() != null){
-
             if (voices[channel].length > numberOfCycle){
                 var numberOfnew = 0, numberOfold = 0; 
                 voices[channel].forEach(function(element){
@@ -238,7 +239,6 @@ startBroadcastChannel = (channel) => {
  * update broadcast current playing voice's identify from old one.
  */
 updatedBroadcast = (channel, currentID, currentDuration) => {
-
     console.log(channel + ' updatedBroadcast: ' + currentID);
     determineNextQueueItem(channel, currentID, function(nextItem){
         playNext(channel, (currentDuration+2.0)*1000);
@@ -253,9 +253,9 @@ updatedBroadcast = (channel, currentID, currentDuration) => {
  */
 determineNextQueueItem = (channel, currentID, callback) => {
 
-    var newVoicesCount = numberOfnewVoices();
-    if (newVoicesCount > 1)
-    {
+    // var newVoicesCount = numberOfnewVoices();
+    // if (newVoicesCount > 1)
+    // {
         checkNewvoice(channel, function(isExistNew, voice){
             var nextItem = null;
             if(isExistNew){
@@ -279,14 +279,19 @@ determineNextQueueItem = (channel, currentID, callback) => {
                         }
 
                         nextQueueItem[channel] = nextItem;
+                    } else {
+                        if (voices[channel].length > 0){
+                            nextItem = voices[channel][0];
+                        }
+                        nextQueueItem[channel] = nextItem;
                     }
                 });
             }
 
             callback(nextItem);
         });
-    } 
-    else 
+    // } 
+    /*else 
     {
         var nextItem = null;
         checkExistvoice(channel, currentID, function(isExist, indexOf){
@@ -302,11 +307,17 @@ determineNextQueueItem = (channel, currentID, callback) => {
                 }
 
                 nextQueueItem[channel] = nextItem;
+            } else {
+                if (voices[channel].length > 0){
+                    nextItem = voices[channel][0];
+                }
+
+                nextQueueItem[channel] = nextItem;
             }
         });
 
-         callback(nextItem);
-    }
+        callback(nextItem);
+    }*/
 }
 
 /**
