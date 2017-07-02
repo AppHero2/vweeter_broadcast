@@ -50,6 +50,7 @@ Vweeter = () => {
     trackBroadCasts();
     
     trackDisconnectedUsers();
+
 }
 
 /**
@@ -135,28 +136,6 @@ trackVoices = (channel) => {
         
     });
 
-    // // very first voice after created channel
-    // voiceRef.on('child_added', function(snapshot){
-    //     if (snapshot.val() != null){
-    //         if (voices[channel].length == 0){
-    //             var key = snapshot.key;
-    //             var duration = snapshot.val().duration;
-    //             var fileName = snapshot.val().fileName;
-    //             var filePath = snapshot.val().filePath;
-    //             var isPlayed = snapshot.val().isPlayed;
-    //             var voice = {
-    //                     'key': key,
-    //                     'fileName':fileName,
-    //                     'filePath':filePath,
-    //                     'duration':duration,
-    //                     'isPlayed':isPlayed
-    //                 };
-    //             voices[channel].push(voice);
-    //             voiceRef.off();
-    //         }
-    //     }
-    // });
-
     // track incoming new voices
     var queryRef = voiceRef.orderByChild('isPlayed').equalTo(false);
     queryRef.on('child_added', function(snapshot){
@@ -237,6 +216,20 @@ trackVoices = (channel) => {
         }
     });
 
+    voiceRef.on('child_removed', function(snapshot){
+        //TODO: implementation after removed
+    });
+
+
+    // track banned users
+    channelRef.child(channel).child('bannedUsers').on('child_added', function(snapshot){
+        if (snapshot.val() != null){
+            var bannedUserId = snapshot.key;
+            console.log('banned user: ' + bannedUserId);
+            //TODO: remove voices of banned users
+
+        }
+    });
 }
 
 /**
@@ -277,9 +270,9 @@ updatedBroadcast = (channel, currentID, currentDuration) => {
  */
 determineNextQueueItem = (channel, currentID, callback) => {
 
-    // var newVoicesCount = numberOfnewVoices();
-    // if (newVoicesCount > 1)
-    // {
+    var newVoicesCount = numberOfnewVoices();
+    if (newVoicesCount > 1)
+    {
         checkNewvoice(channel, function(isExistNew, voice){
             var nextItem = null;
             if(isExistNew){
@@ -314,8 +307,8 @@ determineNextQueueItem = (channel, currentID, callback) => {
 
             callback(nextItem);
         });
-    // } 
-    /*else 
+    } 
+    else 
     {
         var nextItem = null;
         checkExistvoice(channel, currentID, function(isExist, indexOf){
@@ -341,7 +334,7 @@ determineNextQueueItem = (channel, currentID, callback) => {
         });
 
         callback(nextItem);
-    }*/
+    }
 }
 
 /**
